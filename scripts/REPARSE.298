@@ -1,0 +1,53 @@
+dim dat
+dat = files.readfilee( "wpid.dat" )
+dim aDat
+aDat = Split( dat, vbnewline )
+dim i, j
+dim aFld
+dim sF1
+for i = 0 to ubound( aDat ) - 1
+	aFld = Split( aDat( i ), "|" )
+	aFld(1) = Replace( aFld(1), "  ", " " )
+	sF1 = aFld(1)
+	for j = 2 to 8
+		aFld(j) = vbNullString
+	next
+	aFld(2) = NoTabsOrCaps( sF1 )
+	aFld(3) = NoSpaces( sF1 )
+	aFld(4) = NoSpacesNoMg( sF1 )
+	aFld(5) = NoSpacesNoMgNoTabsOrCaps( sF1 )
+	aDat(i) = Join( aFld, "|" )
+next
+files.WriteFileA "wpid.new", Join( aDat, vbNewLine ), 2
+
+function NoSpaces( s )
+	NoSpaces = Replace( s, " ", vbNullString )
+end function
+
+function NoSpacesNoMg( s )
+	dim res
+	res = s
+	res = Replace( res, " ", vbNullString )
+	res = Replace( res, "mg", vbNullString )
+	res = Replace( res, "mcg", vbNullString )
+	NoSpacesNoMg = res 
+end function
+
+function NoSpacesNoMgNoTabsOrCaps( s )
+	dim res
+	res = s
+	res = Replace( res, " TABS", vbNullString )
+	res = Replace( res, " CAPS", vbNullString )
+	res = Replace( res, " ", vbNullString )
+	res = Replace( res, "mg", vbNullString )
+	res = Replace( res, "mcg", vbNullString )
+	NoSpacesNoMgNoTabsOrCaps = res 
+end function
+
+function NoTabsOrCaps( s )
+	dim res
+	res = s
+	res = Replace( res, " TABS", vbNullString )
+	res = Replace( res, " CAPS", vbNullString )
+	NoTabsOrCaps = res
+end function

@@ -1,0 +1,36 @@
+uses panel
+uses text
+uses system
+uses screen
+
+include extensions.vbs
+'msgbox sCustomer,,"Printing signoff sheet for"
+sub ShowBox( sMsg )
+	dim pHgt, pWid
+	pHgt = 1000
+	pWid = 3000 + panel.textwidth(sMsg)
+	panel.top = screen.height / 2 - (pHgt / 2) 
+	panel.left = screen.width / 2 - (pWid / 2)
+	panel.height = pHgt
+	panel.width = pWid
+	panel.caption = "Printing signoff sheet for ..."
+	panel.borderstyle = 0
+	panel.windowstate = 0
+	panel.visible = true
+	text.pointtopanel
+	panel.font.name = "Arial"
+	panel.font.size= 18
+	text.writetext sMsg
+	panel.saveimage "panel.bmp"
+	dim i
+	for i = 1 to 3
+		system.cooperate
+		if panel.visible = false then exit for
+		system.sleep 1000
+	next
+	panel.visible = false
+	panel.enabled = false
+	text.pointtoprinter
+end sub
+ShowBox "Woof woof"
+system.stoprun

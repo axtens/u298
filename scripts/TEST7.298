@@ -1,0 +1,7 @@
+include "extensions.vbs"
+text.pointtopanel
+panel.backcolor = &Hffffff
+panel.visible = true
+box cm(1), cm(1), cm(5), cm(5)
+panel.enscribe "Meow"
+panel.saveimage "test7.bmp"

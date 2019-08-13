@@ -1,0 +1,7 @@
+dim a
+a = domain.getavailablentdomains()
+'system.consolewriteline array.showstructure(a)
+system.consolewriteline computer.computername()
+system.consolewriteline array.showstructure(group.getgroups())
+
+system.stoprun

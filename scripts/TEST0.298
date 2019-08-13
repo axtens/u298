@@ -1,0 +1,22 @@
+uses Printer
+uses System
+uses Application
+uses Panel
+include extensions.vbs
+on error resume next
+Printer.PaperBin =1
+verdana12
+atsay 1134, 0, "Name: Name"
+atsay 1134,180, "Address:	Addr"
+atsay 1134,360,"Area:		Area"
+atsay 1134,540, "Begin on: 	Wednesday, 22/2/1961"
+setfont "Times New Roman", 10, "bold"
+atsay 4536,0,"Packed by:Joe Blogs"
+verdana12
+atsay 4536,180,"Addr1"
+atsay 4536,360, "Addr2"
+atsay 4536,540, "123456789"
+atsayrightaligned cm(5),"foo"
+absolutebox cm(1),cm(1),cm(2),cm(2)
+rem
+system.stoprun

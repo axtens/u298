@@ -1,0 +1,20 @@
+uses Regexp
+uses System
+
+Function RegExpTest(patrn, strng)
+   Dim regEx, Match, Matches   ' Create variable.
+   DIM RetStr
+   RegExp.Pattern = patrn   ' Set pattern.
+   RegExp.IgnoreCase = True   ' Set case insensitivity.
+   RegExp.Global = True   ' Set global applicability.
+   Set Matches = RegExp.Execute(strng)   ' Execute search.
+   For Each Match in Matches   ' Iterate Matches collection.
+      RetStr = RetStr & "Match found at position "
+      RetStr = RetStr & Match.FirstIndex & ". Match Value is '"
+      RetStr = RetStr & Match.Value & "'." & vbCRLF
+   Next
+   RegExpTest = RetStr
+End Function
+
+system.consolewriteline RegExpTest("is.", "IS1 is2 IS3 is4")
+system.stoprun

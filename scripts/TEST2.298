@@ -1,0 +1,140 @@
+uses printer
+uses text
+uses font
+uses dialogs
+
+include extensions.vbs
+'on error resume next
+dialogs.ShowPrinter
+if err.number <> 0 then 
+  msgbox err.description
+end if
+'Printer.NewPage
+'Printer.ScaleMode = vbMillimeters
+'MsgBox Printer.DeviceName
+'Printer.BackColor = QBColor(7)
+'Printer.ForeColor = QBColor(0)
+Printer.Width = cm(21)'210
+Printer.Height = cm(29.7)'297
+Printer.PrintQuality = -4 'vbPRPQHigh
+'Printer.ColorMode = 1
+Printer.PaperSize = 9 'vbPRPSA4 
+' Position title on the page
+Printer.CurrentX = cm(1)'30
+Printer.CurrentY = cm(1)'15
+' Set title font
+Font.Name = "Verdana": Font.Size = 14: Font.Bold = True
+Set Printer.Font = Font
+Text.CentreText 15, "Simple Printout Demo"
+Text.WriteText
+' Use smaller size for text
+Font.Size = 12: Font.Bold = False
+Set Printer.Font = Font
+Text.WriteText "Print and preview formatted text. " & "If the text printed with a single call to the Print method exceeds " & "the width of the form, the text isn't wrapped automatically."
+Text.WriteText
+Text.WriteText "However, every time you call the Print method, " & "the text start at the far left edge of the form on the following line."
+Text.WriteText
+Text.WriteText
+' Another font font for formatted text
+Font.Size = 10: Font.Italic = True
+Set Printer.Font = Font
+' Set the left margin.
+' No need to set the vertical coordinate,
+' because each call to the Print method
+' advances to the following line
+Printer.CurrentX = 20
+Text.WriteText "Print and preview formatted text. "
+Printer.CurrentX = 20
+Text.WriteText "If the text printed with a single call to the Print method exceeds "
+Printer.CurrentX = 20
+Text.WriteText "the width of the form, the text isn't wrapped automatically."
+' Call Print method to advance vertically
+Text.WriteText
+Printer.CurrentX = 20
+Text.WriteText "However, every time you call the Print method, "
+Printer.CurrentX = 20
+Text.WriteText "the text starts at the far left edge of the form "
+Printer.CurrentX = 20
+Text.WriteText "on the following line."
+Text.WriteLine cm(1), Printer.CurrentY, Printer.ScaleWidth - cm(1), Printer.CurrentY
+Printer.Font.Italic = False
+Printer.Font.Bold = True
+' Print left aligned text (no special action required)
+Dim str, ypos, i 
+str = "Left aligned Text"
+Printer.CurrentX = 0
+Printer.CurrentY = Printer.CurrentY + 5
+YPos = Printer.CurrentY
+Text.WriteText str
+' Print centered text
+' Use the TextWidth method to retrieve the width
+' of a string when rendered on a specific device
+' (screen/printer) and then leave same amount of
+' space on either side of the string
+atsaycentred ypos,"Centered Text"
+' Print right aligned text
+' As with the centered text, calculate the width
+' of the string and then leave the extra space to
+' the left of the string
+text.rightaligntext ypos, "Right Aligned Text"
+
+'for i = 1 to 20 step 2
+  'for j = 1 to 10
+  'atpicture cm(I),cm(i),"dogvsmall.bmp"
+  'next
+'next
+for i = 2 to 20 step 2
+  'for j = 1 to 10
+  atpicturelimited cm(I),cm(i),cm(i)+cm(i),cm(i)*2,"dogvsmall.bmp"
+  'next
+next
+
+' Print the same string in three different sizes
+' with their enclosing rectangles
+ypos = cm(8)
+Printer.Font.Italic = False
+Printer.Font.Bold = False
+Printer.CurrentX = 20
+Printer.CurrentY = ypos
+Printer.Font.Size = 8
+str = "(abcxyz)[ABCXYZ]{123}"
+Text.WriteText str
+Text.WriteLine 20, ypos,20 + Printer.TextWidth(str), ypos + Printer.TextHeight(str)
+
+ypos = yPos + cm(1)
+Printer.CurrentX = 60
+Printer.CurrentY = ypos
+Printer.Font.Size = 12
+Text.WriteText str
+Text.WriteLine 60, ypos,60 + Printer.TextWidth(str), ypos + Printer.TextHeight(str)
+
+ypos = yPos + cm(1)
+Printer.CurrentX = 115
+Printer.CurrentY = ypos
+Printer.Font.Size = 20
+Text.WriteText str
+Text.WriteLine 115, ypos,115 + Printer.TextWidth(str), ypos + Printer.TextHeight(str)
+
+ypos = yPos + cm(1)
+str = ".     ."
+Printer.CurrentX = 20
+Printer.CurrentY = ypos
+Printer.Font.Size = 8
+Text.WriteText str
+Text.WriteLine 20, ypos,20 + Printer.TextWidth(str), ypos + Printer.TextHeight(str)
+
+ypos = ypos + cm(1)
+Printer.CurrentX = 30
+Printer.CurrentY = ypos
+Printer.Font.Size = 12
+Text.WriteText str
+Text.WriteLine 30, ypos,30 + Printer.TextWidth(str), ypos + Printer.TextHeight(str)
+
+ypos = yPos + cm(1)
+Printer.CurrentX = 45
+Printer.CurrentY = ypos
+Printer.Font.Size = 20
+Text.WriteText str
+Text.WriteLine 45, ypos,45 + Printer.TextWidth(str), ypos + Printer.TextHeight(str)
+
+system.stoprun

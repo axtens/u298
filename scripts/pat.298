@@ -1,0 +1,165 @@
+uses ini1
+uses files
+USES SYSTEM
+uses strings
+uses cmdline
+uses trace
+uses arrays
+
+include cleanupdosages.vbs
+
+'const WPACKSINI = "c:\users\bruce\projects\stdtools\tests\WPACKS.INI"
+const WPACKSINI = "Z:\DBASE\WPACKS.INI"
+
+loadWPIDs
+
+const CNT = 7
+
+trace.tracefile = "pat.log"
+trace.tracing = true
+trace.cleartrace
+
+dim i
+dim j
+
+dim sCustomer
+dim sCustNo
+
+files.writefilea "cmdline.bat", cmdline.tostring & vbnewline, 2
+
+dim aCmd
+aCmd = strings.splitstring( cmdline.tostring )
+sCustomer = aCmd(2) 
+sCustno = LTrim( Left( sCustomer, Instr(sCustomer, "-") - 1 ) )
+
+if sCustomer = vbnullstring then
+	MsgBox "No customer specified on command line"
+	System.stoprun
+end if
+
+redim aParse(100)
+
+dim p
+p = 0
+
+dim pattern
+pattern = ini1.readinia( sCustomer, "Pattern", "p:\bruce_axtens\zed\dbase\wpacks.ini" )
+
+dim aTime
+dim aDose
+dim aDrug
+
+for i = 1 to CNT
+	aTime = ini1.readinia( sCustomer, "Times_" & i, "p:\bruce_axtens\zed\dbase\wpacks.ini")
+	aDose = ini1.readinia( sCustomer, "Dose_" & i, "p:\bruce_axtens\zed\dbase\wpacks.ini")
+	aDrug = ini1.readinia( sCustomer, "Drug_" & i, "p:\bruce_axtens\zed\dbase\wpacks.ini")
+	Parse aDrug, aDose, aTime, pattern 
+next
+
+for i = 0 to p - 1
+	'~ system.consolewriteline sCustomer & "," & "%" & strings.leftfill( i, 2, "0" ) & "=" & aParse(i)
+	'~ system.consolewriteline sCustomer & "," & aParse(i)
+	system.consolewriteline "%" & STRINGS.LEFTFILL(I,2,"0") & "=" & aParse(i)
+next
+
+system.stoprun
+
+sub echo( s )
+	system.consolewriteline s
+end sub
+
+sub Parse( drug, dose, time, patt )
+	dim sTemp
+	dim sPrevName
+	dim sName, sDosage, sMultiplier
+	dim aDrugs
+	aDrugs = Split( drug, ":" )
+	dim sDrug
+	dim nXPos
+	sPrevName = vbnullstring
+	For Each sDrug in aDrugs
+			nXPos = instr(1, sDrug, "x" )
+			if nXPos > 2 then
+				sName = strings.leftoflast(sDrug, " " ) 
+				sDosage = strings.rightoflast( sDrug, " " ) 
+				sMultiplier = strings.leftof( sDosage, "x" ) 
+				sName = sName & " " & strings.rightof( sDosage, "x" )
+			elseif nXPos > 0 then
+				sName = sPrevName
+				sMultiplier = strings.leftof( sDrug, "x" )
+				sName = sName & " " & strings.rightof( sDrug, "x" )
+			else
+				sName = sDrug 
+				sDosage = dose 
+				sMultiplier = vbnullstring
+			end if
+			sTemp = GetFullMedicationName(sName) & "|" '& GetWPID(sName) & ","
+			if sMultiplier = vbnullstring then
+				'trace "okay"
+				sTemp = sTemp & Nice(dose, time, patt) '& ","
+			else
+				'trace "special"
+				sTemp = sTemp & Nice(sMultiplier & "x" &  strings.rightof( dose, "x" ), time, patt) '& ","
+			end if
+			aParse(p) = sTemp ' & drug & "," & dose & "," & time
+			p = p + 1
+			sPrevName = strings.leftoflast(sDrug, " " )
+	next
+end sub
+
+function Nice( byval spec, time, patt )
+	dim i
+	dim res
+	dim a
+	dim apatt
+	dim tmp
+	dim prn_mdu
+
+	apatt = split( patt, "," )
+	
+	prn_mdu = false
+	if strings.endswith( spec, " - PRN/MDU" ) then
+		prn_mdu = true
+		spec = replace( spec, " - PRN/MDU", "")
+	end if
+
+	if strings.endswith( spec, "(PRN/MDU)" ) then
+		prn_mdu = true
+		spec = replace( spec, "(PRN/MDU)", "")
+	end if
+
+	If Instr( 1, spec, "DAILY" ) then
+		for i = 1 to len( time )
+			if mid( time, i ,1 ) <> "0" then
+				'~ res = res & mid( time, i, 1 ) & "@" & apatt(i-1) 
+				res = res & fracp(strings.leftof(spec," " )) & "@" & apatt(i-1) 
+				if prn_mdu then 
+					res = res & "(PRN/MDU) "
+				else
+					res = res & " "
+				end if
+			end if
+		next
+	else
+		'echo spec
+		'find successive n 'x' s
+		'then parse them for time/time or just time
+		do
+			a = regsplit( "(\d+[\.]*\d*)x(\S*|\D*)", spec )
+			tmp = a(0)
+			res = res & cleanupdosages(tmp) & " "
+			spec = replace( spec, a(0), vbnullstring )
+			if trim(spec) = vbnullstring then exit do
+		loop
+
+	end if
+	
+	'~ for i = 0 to ubound(apatt)
+		'~ echo apatt(i)
+		'~ res = replace( res, apatt(i), i+1)
+	'~ next
+	RES = TRIM(RES)
+	res = replace(res, "WEEK ", "WEEK_" )
+	RES = JOIN(SPLIT(RES," "),",")
+	nice = trim(res)
+end function

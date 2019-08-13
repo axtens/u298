@@ -1,0 +1,15 @@
+uses files
+dim dat
+dat = files.readfilee( "wpid.dat" )
+dim aDat
+aDat = Split( dat, vbnewline )
+dim i, j
+dim sName, sImag
+Files.WriteFileA "checkimages.txt", "", 2
+for i = 0 to ubound( aDat ) - 1
+	sName = Split( aDat( i ), "|")( 1 )
+	sImag = Split( aDat( i ), "|")( 9 )
+	if not Files.Exists( ".\images\" & sImag & ".GIF" ) then
+		Files.WriteFileA "checkimages.txt", "Cannot find image " & sImag & ".GIF for " & sName & vbNewline, 1
+	end if
+next

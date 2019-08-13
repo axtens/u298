@@ -1,0 +1,27 @@
+'on error resume next
+include "extensions.vbs"
+dialogs.ShowPrinter
+if err.number <> 0 then 
+  msgbox err.description
+end if
+Printer.Width = cm(21)'210
+Printer.Height = cm(29.7)'297
+Printer.PrintQuality = -4 'vbPRPQHigh
+Printer.PaperSize = 9 'vbPRPSA4 
+' Position title on the page
+Printer.CurrentX = cm(1)'30
+Printer.CurrentY = cm(1)'15
+dim i,j
+dim a
+a = files.collectfiles(".\images", ".gif" )
+dim f 
+i = 1
+j = 1
+for each f in a
+	atpicturewh cm(j),cm(i),cm(2),cm(1),f
+	i = i + 1
+	if i > 28 then 
+		j = j + 2
+		i = 1
+	end if
+next

@@ -1,0 +1,37 @@
+uses screen
+uses panel
+uses text
+uses system
+uses printer
+
+include extensions.vbs
+dim wid
+dim hgt
+   wid = Screen.Width \ Screen.TwipsPerPixelX
+    hgt = Screen.Height \ Screen.TwipsPerPixelY
+MsgBox wid & "x" & hgt
+panel.width = screen.width
+panel.height = screen.height
+panel.windowstate = 2
+panel.borderstyle = 0
+panel.backcolor = 0
+text.pointtopanel
+Panel.Caption = "Dogz"
+Panel.Visible = True
+dim t, l
+t = 0
+l = 0
+dim i
+panel.font.name = "Arial"
+for i = 1 to 10
+	'panel.top = t
+	'panel.left = l
+	system.cooperate
+	setfont "Times New Roman", 10 + i, array("+bold")
+	atsay t, l, t & "X" & l
+	t = t + 100
+	l = l + 100
+next
+box4 0, 0
+system.sleep 5000
+system.stoprun

@@ -1,0 +1,53 @@
+function RegSplit(patrn, strng)
+   Dim s, Match, Matches   ' Create variable.
+   dim aParts
+   redim aParts(1)
+   dim i
+   RegExp.Pattern = patrn   ' Set pattern.
+   RegExp.IgnoreCase = True   ' Set case insensitivity.
+   RegExp.Global = True   ' Set global applicability.
+   Set Matches = RegExp.Execute(strng)   ' Execute search.
+   if matches.count > 0 then
+      set match = matches(0)
+      set s = match.submatches
+      redim aParts(s.count-1)
+      for i = 0 to s.count - 1
+         aParts(i) = s(i) 
+      next
+   end if
+   RegSplit = aParts
+End Function
+
+function DailyX( sTxt )
+   DailyX   = RegSplit("(\d*)\s?(\d+[\.]?\d*)x(DAILY)", sTxt)
+end function
+
+function DayPartX( sTxt )
+   dim a
+   a = RegSplit("(\d+[\.]?\d*)x(MORNING|MOR|BREAKFAST|BREAK|BRE|LUNCH|LUN|DINNER|DINN|DIN|BEDTIME|BED)", sTxt)
+   if Strings.beginswith(a(1),"MOR") then a(1) = "MORNING"
+   if Strings.beginswith(a(1),"BRE") then a(1) = "BREAKFAST"
+   if Strings.beginswith(a(1),"DIN") then a(1) = "DINNER"
+   if Strings.beginswith(a(1),"LUN") then a(1) = "LUNCH"
+   if Strings.beginswith(a(1),"BED") then a(1) = "BEDTIME"
+   DayPartX = a
+end function
+
+function DayPartAt( sTxt )
+   dim a
+   a = RegSplit("(\d+[\.]?\d*)@(MORNING|MOR|BREAKFAST|BREAK|BRE|LUNCH|LUN|DINNER|DINN|DIN|BEDTIME|BED)", sTxt)
+   if Strings.beginswith(a(1),"MOR") then a(1) = "MORNING"
+   if Strings.beginswith(a(1),"BRE") then a(1) = "BREAKFAST"
+   if Strings.beginswith(a(1),"DIN") then a(1) = "DINNER"
+   if Strings.beginswith(a(1),"LUN") then a(1) = "LUNCH"
+   if Strings.beginswith(a(1),"BED") then a(1) = "BEDTIME"
+   DayPartAt = a
+end function
+
+msgbox Array.showstructure( DayPartX( "2xBED" ) )
+
+msgbox Array.showstructure( DayPartAt( "2@BREAK" ) )
+
+msgbox Array.showstructure( DailyX( "5 1xDAILY" ) )
+
+'thus, if a has three members, it's a DAILY

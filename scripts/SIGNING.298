@@ -1,0 +1,450 @@
+uses dialogs
+uses printer
+uses cmdline
+uses text
+uses pict
+uses picture
+uses strings
+uses arrays
+uses trace
+uses ini1
+uses files
+USES PANEL
+USES SCREEN
+USES SYSTEM
+uses application
+'~ uses database
+
+'const WPACKSINI = "c:\users\bruce\projects\stdtools\tests\WPACKS.INI"
+const WPACKSINI = "Z:\DBASE\WPACKS.INI"
+
+'~ dim db
+'~ set db = database.opendbf( WPACKSDIR )
+
+include extensions.vbs
+include cleanupdosages.vbs
+'include dosageparsing.vbs
+
+trace.tracefile = "signing.log"
+trace.tracing = true
+trace.cleartrace
+
+dim i
+dim j
+dim k
+dim n
+
+dim sCustomer
+dim sCustNo
+dim gridLine
+dim textLine
+dim nImageCnt
+dim sDrug
+dim sLeft, sRight
+dim sImage
+dim here
+dim aNames
+dim a1, a2
+dim sTimeSlots
+
+'trace "wpacks.ini loaded: " & ini2.Load( WPACKSINI )
+
+'~ on error resume next
+Dialogs.cancelerror = true
+
+files.writefilea "cmdline.bat", cmdline.tostring & vbnewline, 2
+
+dim aCmd
+aCmd = strings.splitstring( cmdline.tostring )
+sCustomer = aCmd(2) 'outside vb6 it's aCmd(2)
+sCustno = LTrim( Left( sCustomer, Instr(sCustomer, "-") - 1 ) )
+
+if sCustomer = vbnullstring then
+	MsgBox "No customer specified on command line"
+	System.stoprun
+end if
+
+dim pattern
+pattern = ini1.readinia( sCustomer, "Pattern", WPACKSINI )
+
+if pattern = vbnullstring then
+    Msgbox WPACKSINI & " does not contain a Pattern setting for " & sCustomer & _
+        "." & vbnewline & "This program will now end."
+    system.stoprun
+end if
+
+ShowBox "Printing signoff sheet for ...", sCustomer 
+'msgbox sCustomer,,"Printing signoff sheet for"
+
+'can now use readini to read from WPACKS.INI
+' var = ini1.readinia( section, item, filename )
+
+Application.Title = sCustomer
+'Dialogs.ShowPrinter
+'if err.number <> 0 then 
+'  msgbox err.description
+'  system.stoprun
+'end if
+
+'~ msgbox Printer.printaction
+ClarifyMedications sCustomer 'part of cleanupdosages.vbs
+	'converts Drug_ and Dose_ into
+	'Picture_ and Medication_
+
+on error resume next
+Printer.Width = cm(21)'210
+Printer.Height = cm(29.7)'297
+Printer.PrintQuality = vbPRPQHigh
+
+Printer.PaperSize = vbPRPSA4 
+on error goto 0
+
+'STATIC
+gridLine = 1
+textLine = gridLine + 0.1
+' Position title on the page
+SetFont "Arial", 14, Array("+bold")
+AtSay cm(3), cm(gridLine), "Signing Sheet and Administration Record" 
+
+'DYNAMIC
+gridLine = 1
+textLine = gridLine + 0.1
+SetFont "Arial", 9, Array("+bold")
+Box cm(15), cm(gridLine), cm(5), cm(2)  'Allergies
+dim sAllerg
+sAllerg = ini1.readinia( sCustomer, "Allergies", WPACKSINI )
+if sAllerg = "0" then sAllerg = vbNullString
+AtSay cm(15.1), cm(textLine), "Allergic To: " & sAllerg
+
+'DYNAMIC
+gridLine = 2
+textLine = gridLine + 0.1
+SetFont "Arial", 11, Array("+bold")
+Box cm(1), cm(gridLine), cm(7), cm(1)  'Name
+AtSay cm(1.1), cm(textLine), "Name: " & Mid(sCustomer, Instr( sCustomer, "-" ) + 1 )
+
+'DYNAMIC
+gridLine = 2
+textLine = gridLine + 0.1
+SetFont "Arial", 11, Array("+bold")
+Box cm(8), cm(gridLine), cm(7), cm(1)  'Doctor
+AtSay cm(8.1), cm(textLine), "Doctor: " & ini1.readinia( sCustomer, "Doctor", WPACKSINI )
+
+'DYNAMIC
+gridLine = 3
+textLine = gridLine + 0.1
+Box cm(1), cm(gridLine), cm(19), cm(4) 'Medications
+'use WPID.INI for name to graphic filename resolution. Images in .\images\ folder
+
+'so medications is 19 cm wide and 4 cm high. 
+'Have to make room for 7 pictures. 
+'4.75cm per column
+'2cm per row
+
+dim medWidth, medHeight
+'~ medWidth = cm(4.75)
+medWidth = cm(3.16)
+medHeight = cm(2)
+
+dim medSlots(13) 'but only using 1..12
+medSlots(1) = array( cm(1) + ( medWidth * 0 ), cm(gridLine) + ( medHeight * 0 ) )
+medSlots(2) = array( cm(1) + ( medWidth * 1 ), cm(gridLine) + ( medHeight * 0 ) )
+medSlots(3) = array( cm(1) + ( medWidth * 2 ), cm(gridLine) + ( medHeight * 0 ) )
+medSlots(4) = array( cm(1) + ( medWidth * 3 ), cm(gridLine) + ( medHeight * 0 ) )
+medSlots(5) = array( cm(1) + ( medWidth * 4 ), cm(gridLine) + ( medHeight * 0 ) )
+medSlots(6) = array( cm(1) + ( medWidth * 5 ), cm(gridLine) + ( medHeight * 0 ) )
+medSlots(7) = array( cm(1) + ( medWidth * 0 ), cm(gridLine) + ( medHeight * 1 ) )
+medSlots(8) = array( cm(1) + ( medWidth * 1 ), cm(gridLine) + ( medHeight * 1 ) )
+medSlots(9) = array( cm(1) + ( medWidth * 2 ), cm(gridLine) + ( medHeight * 1 ) )
+medSlots(10) = array( cm(1) + ( medWidth * 3 ), cm(gridLine) + ( medHeight * 1 ) )
+medSlots(11) = array( cm(1) + ( medWidth * 4 ), cm(gridLine) + ( medHeight * 1 ) )
+medSlots(12) = array( cm(1) + ( medWidth * 5 ), cm(gridLine) + ( medHeight * 1 ) )
+
+nImageCnt = LoadImages()
+
+LoadWPIDs
+
+i = 1
+do
+	if i > 12 then exit do 'not handling for more than 12 medications at this point
+	sDrug = "@Drug_" & i
+	sDrug = ini1.readinia( sCustomer, sDrug, WPACKSINI)
+	if sDrug = vbnullstring then exit do 'for
+	sImage = GetWPID( sDrug ) 
+	Trace "*" & sImage
+	' draw box
+	trace "medSlots(" & i & ")(0): " & medSlots(i)(0)
+	trace "medSlots(" & i & ")(1): " & medSlots(i)(1)
+	trace "medWidth: " & medWidth
+	trace "medHeight: " & medHeight
+	box medSlots(i)(0), medSlots(i)(1), medWidth, medHeight
+	' write words
+	setfont "Times New Roman", 8, array("-bold")
+	sDrug = Trim(Replace( sDrug & " ", " TABS ", " " )) 'kludge
+	sDrug = Trim(Replace( sDrug & " ", " TAB ", " " )) 'kludge
+	sDrug = Trim(Replace( sDrug & " ", " CAPS ", " " )) 'kludge
+	atsay medSlots(i)(0) + cm(0.1), medSlots(i)(1) + cm(1.6), sDrug
+	if sImage <> vbNullString then 
+		' insert picture
+		sImage = ".\images\" & sImage & ".gif"
+		if files.exists( sImage ) = false then sImage = ".\images\NOTFOUND.gif"
+		atpicturewh medSlots(i)(0) + cm(0.1), medSlots(i)(1) + cm(0.1), medWidth - cm(0.2), cm(1.5), sImage
+	end if
+	i = i + 1
+loop
+
+'STATIC
+'Now a 3.5 wide x 3 high box divided into 3 sections horizontally
+'Date started
+'Day started
+'Care facility code
+
+gridLine = 7.
+
+'Box cm(1), cm(gridLine), cm(3.5), cm(3)
+Box cm(1), cm(gridLine), cm(3.5), cm(2.4)
+
+for i = 1 to 2 
+'	Box cm(1), cm(gridLine + i), cm(3.5), cm(1)
+	Box cm(1), cm(gridLine +  ( i * 0.8 ) ), cm(3.5), cm(0.8)
+next
+SetFont "Arial", 8, Array("-bold")
+AtSay cm(1.1), cm(gridLine + 0.05), "Date"
+AtSay cm(1.1), cm(gridLine + 0.35), "Started:" 
+SetFont "Arial", 11, Array("+bold")
+AtSay cm(2.5), cm(gridLine + 0.15), ini1.readinia( sCustomer, "BeginOn", WPACKSINI )
+SetFont "Arial", 8, Array("-bold")
+
+gridLine = gridLine + 0.8
+AtSay cm(1.1), cm(gridLine + 0.05), "Day"
+AtSay cm(1.1), cm(gridLine + 0.35), "Started:"
+
+gridLine = gridLine + 0.8
+AtSay cm(1.1), cm(gridLine + 0.05), "Care"
+AtSay cm(1.1), cm(gridLine + 0.35), "Facility:"
+
+'box for photo
+dim aPhoto
+dim sPhoto
+dim sPhotoPath
+sPhotoPath = "patients\" 
+'Trace "sPhotoPath=" & sPhotoPath
+aPhoto = Files.collectfiles( sPhotoPath, ".jpg")
+for i = 0 to ubound(aPhoto)
+	'Trace aPhoto(i)
+	if Strings.contains( aPhoto(i), "\" & sCustno & " " ) then
+		sPhoto = aPhoto(i)
+		exit for
+	end if
+next
+Trace "sPhoto=" & sPhoto
+gridLine = 9.5
+Box cm(1), cm(gridLine), cm(3.5), cm(2.9)
+if sPhoto = vbnullstring then sPhoto = sPhotoPath & "\NOPICTURE.jpg"
+atpicturewh cm(1) + cm(0.1), cm(gridLine) + cm(0.1), cm(3.3), cm(2.7), sPhoto
+	
+'DYNAMIC
+'Next 3.5 wide by 1 cm high boxes, 4 across page for medication time slot
+'then 3.5 wide by 3.5 high boxes, 4 across page for specific meds
+gridLine = 7.5
+here = 4.9
+
+DIM sPat
+trace "sCustomer: " & sCustomer
+sPat = ini1.readinia( sCustomer, "Pattern", WPACKSINI )
+trace "sPat: " & sPat
+aNames = Split( sPat, "," )
+TRACE "ANAMES: " & ARRAYS.SHOWSTRUCTURE(ANAMES)
+for i = 1 to 4
+	boxnamed cm( here ), cm( gridLine - 0.3 ), cm( 3.5 ), cm( 0.8 ), "        :"
+	BoxNamed2 cm(here), cm(gridLine + 0.5), cm(3.5), cm(0.5), aNames(i-1) 'was cm(1) rather than 0.5 
+	here = here + 3.8
+next
+gridLine = gridLine + 1
+here = 4.9
+for i = 1 to 4
+	Box cm(here), cm(gridLine), cm(3.5), cm(3.5)
+	here = here + 3.8
+next
+
+Trace "@ _ n stuff"
+
+dim collayer(3)
+dim coloffs(3)
+dim colline, collayersize, layerdepth
+dim sMed
+dim sMedAmt
+dim sMedSlot
+
+collayersize = 1
+colline = gridLine + 0.2
+layerdepth = 3.5 / 10.0 
+
+coloffs(0) = 5
+coloffs(1) = 5 + 3.8
+coloffs(2) = 5 + 3.8 + 3.8
+coloffs(3) = 5 + 3.8 + 3.8 + 3.8
+
+collayer(0) = 1
+collayer(1) = 1
+collayer(2) = 1
+collayer(3) = 1
+
+'insert data into Pattern boxes
+dim sDosage
+dim aDosage
+dim sTimes
+dim aMed
+dim PrnMdu
+dim sDos
+dim sTim
+dim sMoment
+dim sSlice
+dim aSlices
+dim sXXXX
+
+aSlices = Array( "MORNING","LUNCH","DINNER","BEDTIME")
+i = 1
+do
+	prnMdu = false
+	sMed = ini1.readinia( sCustomer, "@Drug_" & i, WPACKSINI )
+	if sMed = vbnullstring then
+		exit do
+	end if
+	sMed = trim(Replace( sMed & " ", " TABS ", " " )) 'kludge
+	sMed = trim(Replace( sMed & " ", " TAB ", " " )) 'kludge
+	sMed = trim(Replace( sMed & " ", " CAPS ", " " )) 'kludge
+	sDos = ini1.readinia( sCustomer, "@Dose_" & i, WPACKSINI )
+	sTim = ini1.readinia( sCustomer, "@Time_" & i, WPACKSINI )
+	
+	if strings.contains( sDos, "@" ) then
+		sMedAmt = Strings.LeftOf(sDos, "@" )
+		sMedSlot = Strings.RightOf(sDos, "@" )
+	else
+		sMedAmt = Strings.LeftOf(sDos, "_" )
+		sMedSlot = Strings.RightOf(sDos, "_" )
+	end if
+	
+	Trace "sMedAmt: " & sMedAmt
+	Trace "sMedSlot: " & sMedSlot
+	trace "sTim = " & sTim
+	
+	for j = 1 to 4
+		sSlice = Mid( sTim, j, 1 )
+		'~ trace "sSlice = " & sSlice
+		Select Case sSlice
+		Case "0"
+			'do nothing
+			'~ sXXXX = vbnullstring
+		Case "1"
+			'~ trace sDos & ": " & aSlices(j-1) & " " & sSlice & "x" & sMed 
+			'~ sXXXX = sSlice & "@" & aSlices(j-1)
+			n = InArrayAt(aSlices(j-1), aSlices)
+			SETFONT "Times New Roman", 8, ARRAY("-bold")
+			ATSAY cm(coloffs(n)), cm( colline + (layerdepth * ( collayer(n) - 1 ) ) ), FracP(sMedAmt) & " x " & sMed
+			collayer(n) = collayer(n) + 1
+			'one dose of the drug
+		Case "2"
+			'~ trace sDos & ": " & aSlices(j-1) & " " & sSlice & "x" & sMed 
+			'two doses of the drug
+			n = InArrayAt(aSlices(j-1), aSlices)
+			SETFONT "Times New Roman", 8, ARRAY("-bold")
+			ATSAY cm(coloffs(n)), cm( colline + (layerdepth * ( collayer(n) - 1 ) ) ), FracP(sSlice) & " x " & sMed
+			collayer(n) = collayer(n) + 1
+			'~ sXXXX = sSlice & "@" & aSlices(j-1)
+		Case "3"
+			'~ trace sDos & ": " & aSlices(j-1) & " " & sSlice & "x" & sMed 
+			'two doses of the drug
+			n = InArrayAt(aSlices(j-1), aSlices)
+			SETFONT "Times New Roman", 8, ARRAY("-bold")
+			ATSAY cm(coloffs(n)), cm( colline + (layerdepth * ( collayer(n) - 1 ) ) ), FracP(sSlice) & " x " & sMed
+			collayer(n) = collayer(n) + 1
+			'~ sXXXX = sSlice & "@" & aSlices(j-1)
+		End Select
+		'~ if strings.contains( sDos, sXXXX ) then
+			'~ sDos = LTrim(Replace( sDos, sXXXX, vbnullstring, 1 ))
+		'~ else
+			'~ if sXXXX = "LUNCH" then 
+				'~ sXXXX = sSlice & "@MORNING"
+				'~ sDos = LTrim(Replace( sDos, sXXXX, vbnullstring, 1 ))
+			'~ end if
+		'~ end if
+	next
+	i = i + 1
+loop
+
+'DYNAMIC
+'4 x 7 grid of tickoff boxes
+gridLine = gridLine + 4
+
+for i = 1 to 4
+
+	setfont "arial", 12, array("+bold")
+	AtSay cm(1), cm( gridLine + 1), "Week " & i
+
+	for j = 0 to 6
+		Box4TT cm(3) + cm( j * 2.5), cm(gridLine), _
+			Array("TUE","WED","THU","FRI","SAT","SUN","MON")(j), aNames
+	next
+	gridLine = gridLine + 3
+next
+
+'Finally need to put in boxes for 'Reasons Medication Not Given' (STATIC)
+'and 'Notes' (STATIC)
+'and maybe an Identifier at the bottom about who it's from (STATIC)
+BOX cm(1), cm(gridLine), cm(8), cm(3.5)
+BOX cm(1), cm(gridLine + 0.4 ), cm(8), 0
+setfont "Arial", 8, array("+bold")
+atsay cm(3), cm(gridLine + 0.02), "Reason Medication Not Given"
+
+for i = 1 to 7
+	box cm(1), cm(gridLine + 0.4 + ( 0.39 * i ) ), cm(8), 0 
+next
+box cm(1.5), cm(gridLine + 0.4), 0, cm(3.1)
+box cm(5), cm(gridLine + 0.4), 0, cm(3.1)
+box cm(5.5), cm(gridLine + 0.4), 0, cm(3.1)
+
+a1 = Array("Absent", "Doctors Instructions", "Fasting", "Hospital", _
+	"Social Leave (Overnight)", "Miscellaneous", "Nil Stock", _
+	"Outing: Meds with Resident" )
+a2 = Array( "Refused: Residents Choice", "Self-Administered", "Withheld", _
+	"Given but not seen taken" )
+	
+for i = 0 to 7
+	setfont "Arial", 8, array("+bold")
+	atsay cm(1.1), cm( gridLine + 0.4 + ( 0.39 * i  + 0.02) ), _
+		Mid( "ADFHLMNO", i+1, 1 )
+	setfont "Arial", 8, array("-bold")
+	atsay cm(1.52), cm( gridLine + 0.4 + ( 0.39 * i  + 0.02) ), _
+		a1(i)
+next
+
+for i = 0 to 3
+	setfont "Arial", 8, array("+bold")
+	atsay cm(5.1), cm( gridLine + 0.4 + ( 0.39 * i  + 0.02) ), _
+		Mid( "RSWX", i+1, 1 )
+	setfont "Arial", 8, array("-bold")
+	atsay cm(5.52), cm( gridLine + 0.4 + ( 0.39 * i  + 0.02) ), _
+		a2(i)
+next
+
+BOX cm(10), cm(gridLine), cm(10), cm(3.5)
+setfont "Arial", 10, Array("-bold")
+AtSay cm(10.1), cm(gridLine + 0.1), "Other Medications" 
+'Could put in here the medications from Drug_8 and following
+for i = 8 to 14
+	if ini1.readinia( sCustomer, "Drug_" & i , WPACKSINI ) = vbnullstring then exit for
+	atsay cm(10.3), cm(gridLine + 0.5 + ( ( i - 8 ) * 0.4 )), ini1.readinia( sCustomer, "Drug_" & i , WPACKSINI )  
+	atsay cm(14.3), cm(gridLine + 0.5 + ( ( i - 8 ) * 0.4 )), ini1.readinia( sCustomer, "Dose_" & i , WPACKSINI )  
+next
+
+gridLine = gridLine + 3.75 '4
+setfont "Arial", 9, Array("-bold","+italic")
+AtSay cm(1), cm(gridLine), "Packed by: " & ini1.readinia( sCustomer, "PackedBy" , WPACKSINI ) & ", " & _
+							   ini1.readinia( sCustomer, "PackAddr1" , WPACKSINI ) & ", " &  _
+							   ini1.readinia( sCustomer, "PackAddr2" , WPACKSINI ) & ". " & _
+							   ini1.readinia( sCustomer, "PackPhone" , WPACKSINI )
+
+'db.close
+system.stoprun
+
